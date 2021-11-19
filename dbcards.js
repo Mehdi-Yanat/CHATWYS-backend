@@ -1,9 +1,11 @@
 
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const cardschema = mongoose.Schema({
+const cardschema = new mongoose.Schema({
     name:String,
     imgUrl : String
 })
 
-export default mongoose.model('cards' , cardschema)
+const dbcards = mongoose.model('cards' , cardschema);
+
+module.exports = dbcards
