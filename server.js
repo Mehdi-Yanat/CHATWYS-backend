@@ -4,7 +4,8 @@ const dbcards = require("./dbcards")
 const User = require('./src/modules/user')
 const cors = require("cors")
 const auth = require('./src/middlewares/auth')
-
+const multer = require('multer')
+const sharp = require('sharp')
 //App Config
 const app = express()
 const port = process.env.PORT || 8001
@@ -13,6 +14,48 @@ const port = process.env.PORT || 8001
 //Middlewares
 app.use(express.json())
 app.use(cors())
+const upload = multer({
+    limits: {
+        fileSize:1000000,
+    }, 
+    fileFilter(req , file , cb){
+        if (!file.originalname.match(/\.(jpg|jpeg|png|JPG)$/)) {
+         cb(new Error ('Please must be images'))
+            
+        } 
+        cb(undefined , true)
+    }
+})
+app.post('/users/me/avatar', auth , upload.single('avatar') , async (req ,res)=>{
+    const buffer = await sharp(req.file.buffer).resize({width:250 , height:250}).png().toBuffer()
+    req.user.avatar = buffer
+    await req.user.save()
+    res.send()
+} , (error , req ,res, next)=>{
+    res.status(400).send({error:error.message})
+})
+
+app.delete('/users/me/avatar' , auth , upload.single('avatar') , async  (req , res )=>{
+    req.user.avatar = undefined
+    res.send('Deleted Successfully')
+    await req.user.save()
+} , (error , req ,res ,next)=>{
+    res.status().send({error:error})
+})
+
+app.get('/users/:id/avatar'  , async (req , res)=>{
+    try {
+        const user = await User.findById(req.params.id)
+        if (!user || !user.avatar) {
+            throw new Error()
+        }
+        res.set('Content-Type' , 'image/jpg')
+        res.status(200).send(user.avatar)
+    } catch (error) {
+        res.status(401).send(error)
+    }
+})
+
 //DB config
 require('./src/db/mongooseDB')
 //API Endpoint
@@ -21,8 +64,11 @@ app.get('/' , (req ,res) => {
 
 })
 // Tinder card images
-app.post('/tinder/card' , (req , res) =>{
-    const dbCard = req.body
+app.post('/tinder/card' , auth , (req , res) =>{
+    const dbCard =  new dbcards({
+        ...req.body ,
+        owner:req.user._id
+    })
     dbcards.create(dbCard , (err , data) =>{
         if (err) {
             res.status(500).send(err)
@@ -40,6 +86,16 @@ app.get('/tinder/card' , (req , res) =>{
         }
     })
 })
+app.delete('/tinder/card/:owner' , (req , res)=>{
+    dbcards.findOneAndRemove(req.params.owner , (err , data)=>{
+        if (err) {
+            res.status(400).send(err)
+        }else{
+            res.status(200).send(data)
+        }
+    })
+})
+
 
 // Read Users
 app.get('/users/me', auth  , (req , res)=>{
@@ -75,11 +131,10 @@ app.delete('/users/:id' , (req , res)=>{
 // Modify Users
 app.patch('/users/:id' , async (req,res)=>{
   const UserNa9ch = Object.keys(req.body)
-  const updateAllowed = ["email" ,"password","phone"]
+  const updateAllowed = ["username", "email" ,"password","phone"]
   const isValid = UserNa9ch.every((update)=>  updateAllowed.includes(update))
   if (!isValid) {
       throw new Error ('You can not update just email and password and phone')
-      
   }
   try {
     const user = await User.findById(req.params.id)

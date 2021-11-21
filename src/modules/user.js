@@ -63,7 +63,16 @@ const userSchema = new mongoose.Schema({
             type:String,
             required:true
         }
-    }]
+    }],
+    avatar:{
+        type:Buffer
+    }
+})
+
+userSchema.virtual('cards' , {
+    ref:'cards' ,
+    localField:'_id',
+    foreignField:'owner'
 })
 
 userSchema.methods.generateToken = async function(){
@@ -82,7 +91,8 @@ userSchema.methods.toJSON = function () {
 
     delete object.password
     delete object.tokens
-
+    delete object.avatar
+    
     return object
 }
 userSchema.statics.findByCredentials = async (email , password)=>{
