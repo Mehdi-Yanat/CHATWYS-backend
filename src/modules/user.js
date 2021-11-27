@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     username:{
         type:String,
         required:true,
-        trim:true
+        trim:true,
     },
     email:{
         type:String,
@@ -67,6 +67,23 @@ const userSchema = new mongoose.Schema({
     avatar:{
         type:Buffer
     }
+    ,
+    friends:[
+       {
+           type:String
+       }
+    ],
+    friendsRequest:[{
+        type:String
+    }],
+    status:{
+        type:String,
+        default:"Online"
+    },
+    socketId:{
+        type:String
+    }
+
 })
 
 userSchema.virtual('cards' , {

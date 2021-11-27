@@ -6,14 +6,31 @@ const cors = require("cors")
 const auth = require('./src/middlewares/auth')
 const multer = require('multer')
 const sharp = require('sharp')
-//App Config
+const { sendEmail } = require('./src/emails/account')
 const app = express()
+const http = require('http')
+const server = http.createServer(app)
+const SocketIo = require("socket.io")
+const ConvsRouter = require('./src/Routers/convsRouter')
+const MessageRouter = require('./src/Routers/MessagesRouter')
+//App Config
+
 const port = process.env.PORT || 8001
+
+
+const corsOptions ={
+    origin:'http://localhost:3000', 
+    credentials:true,            //access-control-allow-credentials:true
+    optionSuccessStatus:200
+}
+
 
 
 //Middlewares
 app.use(express.json())
-app.use(cors())
+app.use(ConvsRouter)
+app.use(MessageRouter)
+app.use(cors(corsOptions))
 const upload = multer({
     limits: {
         fileSize:1000000,
@@ -26,6 +43,43 @@ const upload = multer({
         cb(undefined , true)
     }
 })
+
+// Socket IO 
+const io = SocketIo(server ,{
+    cors:{
+        origin:"*"   
+    }
+})
+
+// socket io
+
+let users = []
+
+const addUser = (userId , socketId)=>{
+    !users.some(user=>user.userId === user.id) && users.push({userId , socketId})
+}
+
+io.on('connection' , (socket)=>{
+    console.log("New Client Connected");
+
+    
+    socket.on('addUser' , userId => {
+        addUser(userId , socket.id)
+        io.emit('getUsers' , users)
+    })
+  
+    io.emit('response' , "hello")
+
+   
+
+} )
+
+
+//test 
+
+
+
+// 
 app.post('/users/me/avatar', auth , upload.single('avatar') , async (req ,res)=>{
     const buffer = await sharp(req.file.buffer).resize({width:250 , height:250}).png().toBuffer()
     req.user.avatar = buffer
@@ -49,10 +103,10 @@ app.get('/users/:id/avatar'  , async (req , res)=>{
         if (!user || !user.avatar) {
             throw new Error()
         }
-        res.set('Content-Type' , 'image/jpg')
+        res.set('Content-Type', 'image/jpg')
         res.status(200).send(user.avatar)
     } catch (error) {
-        res.status(401).send(error)
+        res.status(401).send("didn't find photo")
     }
 })
 
@@ -64,18 +118,17 @@ app.get('/' , (req ,res) => {
 
 })
 // Tinder card images
-app.post('/tinder/card' , auth , (req , res) =>{
+app.post('/tinder/card' , auth  , async (req , res) =>{
     const dbCard =  new dbcards({
         ...req.body ,
         owner:req.user._id
     })
-    dbcards.create(dbCard , (err , data) =>{
-        if (err) {
-            res.status(500).send(err)
-        }else{
-            res.status(201).send(data)
-        }
-    })
+    try {
+        await dbCard.save()
+        res.status(201).send(dbCard)
+    } catch (error) {
+        res.status(400).send(error)
+    }
 })
 app.get('/tinder/card' , (req , res) =>{
     dbcards.find((err , data)=>{
@@ -98,10 +151,24 @@ app.delete('/tinder/card/:owner' , (req , res)=>{
 
 
 // Read Users
-app.get('/users/me', auth  , (req , res)=>{
+app.get('/users/me', auth  , async (req , res)=>{
     try {
         const data = req.user
         res.status(200).send(data)
+    } catch (error) {
+        res.status(400).send(error)
+    }
+})
+
+app.get('/users', auth  , async (req , res)=>{
+    const userId = req.query.userId
+    const username = req.query.username
+    try {
+        const user = userId 
+        ? await User.findById(userId)
+        : await User.findOne({username:username})
+        const {password , updateAt , ...other} = user._doc
+        res.status(200).send(other)
     } catch (error) {
         res.status(400).send(error)
     }
@@ -111,6 +178,8 @@ app.get('/users/me', auth  , (req , res)=>{
 app.post('/users/signup' , async (req ,res) => {
     const users = new User(req.body)
     const token = await users.generateToken()
+    console.log(req.body.email);
+    sendEmail(req.body.email , req.body.username)
     try {
     res.status(201).send({users , token})
     } catch (error) {
@@ -186,7 +255,7 @@ app.post('/users/logoutAll' , auth , async(req , res)=> {
 
 //Listener
 
-app.listen(port , ()=>{
+server.listen(port , ()=>{
     console.log("Server Started on " , port);
 })
 
