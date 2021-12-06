@@ -7,23 +7,25 @@ const auth = require('./src/middlewares/auth')
 const multer = require('multer')
 const sharp = require('sharp')
 const { sendEmail } = require('./src/emails/account')
-const app = express()
 const http = require('http')
-const server = http.createServer(app)
 const SocketIo = require("socket.io")
 const ConvsRouter = require('./src/Routers/convsRouter')
 const MessageRouter = require('./src/Routers/MessagesRouter')
-//App Config
 
-const port = process.env.PORT || 8001
+
+//App Config
+const app = express()
 
 
 const corsOptions ={
-    origin:"https://tinder-colne-dd096.web.app/",
-    //'http://localhost:3000', 
-    credentials:true,            //access-control-allow-credentials:true
+    origin:'http://localhost:3000', 
+    credentials:true,                    //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
+
+// server variable
+const server = http.createServer(app)
+const port = process.env.PORT || 8001
 
 
 
@@ -57,26 +59,51 @@ const io = SocketIo(server ,{
 let users = []
 
 const addUser = (userId , socketId)=>{
-    !users.some(user=>user.userId === user.id) && users.push({userId , socketId})
+    !users.some((user)=> user.userId === userId) && users.push({userId , socketId})
+}
+
+const removeUser = (socketId) => {
+    users = users.filter( user => user.socketId !== socketId)
+}
+
+const getUser =  (userId) =>  {
+   return users.find((user) => user.userId === userId)
 }
 
 io.on('connection' , (socket)=>{
     console.log("New Client Connected");
 
     
-    socket.on('addUser' , userId => {
+    socket.on('addUser' , (userId) => {
+        console.log(userId);
         addUser(userId , socket.id)
         io.emit('getUsers' , users)
     })
-  
-    io.emit('response' , "hello")
 
-   
+    
+    socket.on('sendMessage' , ({senderId , receiverId , text}) =>{
+        console.log(senderId);
+        console.log(receiverId);
+        console.log(text);
+        const user = getUser(receiverId)
+        console.log(user);
+        io.to(user.socketId).emit('getMessage' , {
+            senderId,
+            text
+        })
+    })
+
+   socket.on('disconnect' , ()=>{
+       console.log("a user disconnected");
+       removeUser(socket.id)
+       io.emit('getUsers' , users)
+   })
 
 } )
 
-
 //test 
+
+
 
 
 
