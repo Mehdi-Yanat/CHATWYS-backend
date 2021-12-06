@@ -11,7 +11,7 @@ const cors = require("cors")
 
 
 const corsOptions ={
-    origin:'http://localhost:3000', 
+    origin:'http://tinder-clone-68079.web.app', 
     credentials:true,            //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
