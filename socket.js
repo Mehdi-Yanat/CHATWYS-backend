@@ -1,7 +1,7 @@
 const io = require('socket.io')(8900 , {
 
     cors:{
-        origin:'http://tinder-clone-68079.web.app'
+        origin:'https://tinder-clone-68079.web.app'
     }
 
 })
