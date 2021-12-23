@@ -18,7 +18,9 @@ const app = express()
 
 
 const corsOptions ={
-    origin:'https://tinder-clone-68079.web.app', 
+    origin: "https://chatwys-5b149.web.app/",
+    //"http://localhost:3000",
+ 
     credentials:true,                    //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
@@ -167,14 +169,53 @@ app.get('/tinder/card' , (req , res) =>{
         }
     })
 })
-app.delete('/tinder/card/:owner' , (req , res)=>{
-    dbcards.findOneAndRemove(req.params.owner , (err , data)=>{
+app.delete('/tinder/card/delete' , auth  , (req , res)=>{
+    const query = {"owner" : {"$eq": req.user._id}}
+    dbcards.findOneAndDelete( query , (err , data)=>{
         if (err) {
             res.status(400).send(err)
         }else{
             res.status(200).send(data)
         }
     })
+})
+
+app.put('/tinder/card/hearts' , auth ,async (req , res )=>{
+    try {
+   const response = await dbcards.findByIdAndUpdate(req.body.CardId , {$push:{Hearts:req.user.id}} , {new:true} )
+        res.status(200).send(response)
+    } catch (error) {
+        res.status(400).send(error)
+    }
+
+})
+app.put('/tinder/card/stars' , auth ,async (req , res )=>{
+    try {
+   const response = await dbcards.findByIdAndUpdate(req.body.CardId , {$push:{Stars:req.user.id}} , {new:true} )
+        res.status(200).send(response)
+    } catch (error) {
+        res.status(400).send(error)
+    }
+
+})
+
+
+app.put("/tinder/card/disHeart" , auth , async (req , res)=>{
+    try {
+        const response = await dbcards.findByIdAndUpdate(req.body.CardId , {$pull:{Hearts:req.user.id} } , {new:true})
+        res.status(200).send(response)
+    } catch (error) {
+        res.status(401).send(error)
+    }
+})
+
+app.put("/tinder/card/disStars" , auth , async (req , res)=>{
+    try {
+        const response = await dbcards.findByIdAndUpdate(req.body.CardId , {$pull:{Stars:req.user.id} } , {new:true})
+        res.status(200).send(response)
+    } catch (error) {
+        res.status(401).send(error)
+    }
 })
 
 

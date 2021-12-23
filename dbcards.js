@@ -9,6 +9,12 @@ const cardschema = new mongoose.Schema({
     owner:{
        type: mongoose.Schema.Types.ObjectId,
        required:true
+    },
+    Hearts:{
+        type:Array
+    },
+    Stars:{
+        type:Array
     }
 })
 

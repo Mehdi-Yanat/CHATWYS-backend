@@ -1,7 +1,9 @@
 const io = require('socket.io')(8900 , {
 
     cors:{
-        origin:'https://tinder-clone-68079.web.app'
+        origin: "https://chatwys-5b149.web.app/"
+        //"http://localhost:3000"
+        //'https://tinder-clone-68079.web.app'
     }
 
 })
