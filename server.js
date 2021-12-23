@@ -18,7 +18,8 @@ const app = express()
 
 
 const corsOptions ={
-    origin: "https://chatwys-5b149.web.app",
+
+    origin:"https://chatwys-5b149.web.app",
     //"http://localhost:3000",
  
     credentials:true,                    //access-control-allow-credentials:true
@@ -271,6 +272,7 @@ app.patch('/users/:id' , async (req,res)=>{
   const UserNa9ch = Object.keys(req.body)
   const updateAllowed = ["username", "email" ,"password","phone"]
   const isValid = UserNa9ch.every((update)=>  updateAllowed.includes(update))
+  console.log(isValid);
   if (!isValid) {
       throw new Error ('You can not update just email and password and phone')
   }
