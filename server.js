@@ -18,7 +18,7 @@ const app = express()
 
 
 const corsOptions ={
-    origin: "https://chatwys-5b149.web.app/",
+    origin: "https://chatwys-5b149.web.app",
     //"http://localhost:3000",
  
     credentials:true,                    //access-control-allow-credentials:true
